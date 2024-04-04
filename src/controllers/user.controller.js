@@ -6,22 +6,20 @@ import { ApiResponse } from '../utils/APiResponse.js'
 
 const registerUser = asyncHandler( async(req, res) => {
     // get user details from frontend
-    const {fullName, email, username, password} = req.body
-    // console.log('email: ', email);
-    // console.log('password: ', password);
+    const {fullname, email, username, password} = req.body
     
     // validation - not empty
     // if(fullName === ""){
     //     throw new ApiError(400, "fullname is required")
     // }
-    if([fullName, email, username, password].some((field) => (
+    if([fullname, email, username, password].some((field) => (
         field.trim() === ""
     ))){
         throw new ApiError(400, "All fields are required")
     }
 
     // check if user already exists: username, email
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [{ username }, { email }]
     })
 
@@ -31,24 +29,25 @@ const registerUser = asyncHandler( async(req, res) => {
 
     // check for images, check for avatar
     const avatarLocalPath = req.files?.avatar[0]?.path
-    const cover_imageLocalPath = req.files?.cover_image[0]?.path
+    const cover_imageLocalPath = req.files.cover_image[0]?.path
 
     if(!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required")
     }
 
     // upload them to cloudinary, avatar
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
-    const cover_image = await uploadOnCloudinary(cover_imageLocalPath)
+    const avatar = await uploadOnCloudinary(avatarLocalPath,"users/images/avatar")
+    const cover_image = await uploadOnCloudinary(cover_imageLocalPath,"users/images/cover_image")
 
     // create user object - create entry in db
     if (!avatar){
+        console.log(avatar)
         throw new ApiError(400, "Avatar file Upload failed")
     }
     const user = await User.create({
-        fullName,
+        fullname,
         avatar: avatar.url,
-        coverImage: cover_image?.url || "",
+        cover_image: cover_image.url? cover_image.url : "",
         email,
         password,
         username: username.toLowerCase()
