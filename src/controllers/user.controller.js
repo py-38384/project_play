@@ -29,7 +29,10 @@ const registerUser = asyncHandler( async(req, res) => {
 
     // check for images, check for avatar
     const avatarLocalPath = req.files?.avatar[0]?.path
-    const cover_imageLocalPath = req.files.cover_image[0]?.path
+    let cover_imageLocalPath;
+    if (req.files && Array.isArray(req.files.cover_image) && req.files.cover_image.legth > 0){
+        cover_imageLocalPath = req.files.cover_image[0]?.path
+    }
 
     if(!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required")
@@ -39,6 +42,7 @@ const registerUser = asyncHandler( async(req, res) => {
     const avatar = await uploadOnCloudinary(avatarLocalPath,"users/images/avatar")
     const cover_image = await uploadOnCloudinary(cover_imageLocalPath,"users/images/cover_image")
 
+
     // create user object - create entry in db
     if (!avatar){
         console.log(avatar)
@@ -47,7 +51,7 @@ const registerUser = asyncHandler( async(req, res) => {
     const user = await User.create({
         fullname,
         avatar: avatar.url,
-        cover_image: cover_image.url? cover_image.url : "",
+        cover_image: cover_image?cover_image.url:null,
         email,
         password,
         username: username.toLowerCase()
